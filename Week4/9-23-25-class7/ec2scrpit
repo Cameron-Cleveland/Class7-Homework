@@ -1,0 +1,57 @@
+#!/bin/bash
+# Use this for your user data (script from top to bottom)
+# install httpd (Linux 2 version)
+yum update -y
+yum install -y httpd
+systemctl start httpd
+systemctl enable httpd
+
+# Get the IMDSv2 token
+TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+
+# Background the curl requests
+curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/local-ipv4 &> /tmp/local_ipv4 &
+curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/placement/availability-zone &> /tmp/az &
+curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/ &> /tmp/macid &
+wait
+
+macid=$(cat /tmp/macid)
+local_ipv4=$(cat /tmp/local_ipv4)
+az=$(cat /tmp/az)
+vpc=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/${macid}/vpc-id)
+
+cat <<EOF > /var/www/html/index.html
+<!doctype html>
+<html lang=\"en\" class=\"h-100\">
+<head>
+<title>Welcome to Thailand</title>
+</head>
+<body>
+<div>
+<h1>No Money No Honey</h1>
+<h1>I, Cameron Cleveland, Thank Theo And Million$, For Teaching Me About Ec2s In Aws. One Step Closer To Escaping Keisha!
+
+With This Class, I Will Net 500k Per Year!</h1>
+
+<br>
+
+<img src="https://cdn.pixabay.com/photo/2013/12/09/19/48/neon-lights-226174_1280.jpg" alt="https://shorturl.at/s8EG9">
+<br>
+
+<h2>I found my wife on a party yacht in Pattaya! Her name is Namsom!
+</h2>
+
+<br>
+
+<img src="https://scontent.fbkk5-4.fna.fbcdn.net/v/t1.15752-9/553873690_1171593505022215_8529737688619123225_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=0024fc&_nc_ohc=MZal2VVgGYQQ7kNvwGLVK_O&_nc_oc=AdlSHR91rmtqhp_QPWGrWKQ3x7vV3w4VBmsQa8v2rWwoBUL2oD_5EuP2V1hd2eZodI98cMQ_Ylp2lj9HgTrsLTFL&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fbkk5-4.fna&oh=03_Q7cD3gED_4Nea2H7dKJaQMaQkReghPcVPBT5rLvzPdMhal-s_Q&oe=690A4E87" alt="https://shorturl.at/TL3yA">
+<br>
+<p><b>Instance Name:</b> $(hostname -f) </p>
+<p><b>Instance Private Ip Address: </b> ${local_ipv4}</p>
+<p><b>Availability Zone: </b> ${az}</p>
+<p><b>Virtual Private Cloud (VPC):</b> ${vpc}</p>
+</div></body>
+</html>
+EOF
+
+# Clean up the temp files
+rm -f /tmp/local_ipv4 /tmp/az /tmp/macid

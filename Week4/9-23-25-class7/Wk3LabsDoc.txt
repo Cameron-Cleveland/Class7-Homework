@@ -1,0 +1,4 @@
+nickname: Vinci
+desired income: 500k
+group leader's name: Brimah
+
