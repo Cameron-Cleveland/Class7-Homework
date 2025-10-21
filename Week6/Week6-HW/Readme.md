@@ -1,134 +1,353 @@
-# AWS VPC with Bastion Host and Web Servers
+# Terraform Beginner's Guide: Complete Setup from Zero
 
-A Terraform project that creates a secure VPC infrastructure with a bastion host and multiple web servers across different availability zones.
+## ⚠️ Before You Start - Important Warnings
 
-## Architecture Overview
+### 🚫 WHAT NOT TO USE:
+- **DO NOT** use online IDEs (Replit, Cloud9, CodePen, etc.)
+- **DO NOT** use mobile devices or tablets
+- **DO NOT** use school/library computers with restrictions
+- **DO NOT** modify the `.gitignore` file we provide
+- **DO NOT** use your AWS root account credentials
 
-- **1 VPC** with CIDR 10.32.0.0/16
-- **1 Public Subnet** in eu-west-1a (for bastion host)
-- **3 Private Subnets** in eu-west-1a, eu-west-1b, eu-west-1c
-- **1 Bastion Host** (Ubuntu) in public subnet
-- **3 Web Servers** - one in each private subnet/AZ
-- Each web server runs nginx with unique content
+### ✅ WHAT TO USE:
+- **Windows**: **Git Bash** (recommended) or PowerShell
+- **Mac**: Use **Terminal** 
+- **All Systems**: **VS Code** as your text editor
 
-## Prerequisites
+---
 
-- AWS account with appropriate permissions
-- Terraform installed
-- AWS CLI configured (optional, but recommended)
+## Phase 1: Install Required Software
 
-## Quick Start
+### Step 1: Install Git Bash (Windows Users Only)
 
-### 1. Clone the Repository
+1. Go to [git-scm.com](https://git-scm.com/)
+2. Click "Download for Windows"
+3. Run the installer with **ALL DEFAULT SETTINGS**
+4. When asked "Choosing the default editor", select "Use Visual Studio Code as Git's default editor"
+5. Complete installation and restart your computer
+
+### Step 2: Install Visual Studio Code
+
+1. Go to [code.visualstudio.com](https://code.visualstudio.com/)
+2. Click "Download for Windows/Mac"
+3. Run installer with default settings
+4. Open VS Code after installation
+
+### Step 3: Install Terraform
+
+#### For Windows (Git Bash):
 ```bash
-git clone <my-repo-url>
-cd <project-directory>
-```
+# Download Terraform
+curl -o terraform.zip https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_windows_amd64.zip
 
-### 2. Create an AWS Key Pair
+# Extract it
+unzip terraform.zip
 
-**Via AWS Console:**
-1. Navigate to AWS Console → EC2 → Key Pairs
-2. Click "Create key pair"
-3. Name: `my-project-key` (or any preferred name)
-4. Key pair type: RSA
-5. Private key file format: .pem
-6. Click "Create key pair"
-7. Save the downloaded `.pem` file securely
+# Move to system path
+mkdir -p /c/terraform
+mv terraform.exe /c/terraform/
 
-**Via AWS CLI:**
-```bash
-aws ec2 create-key-pair --key-name "my-project-key" --query 'KeyMaterial' --output text > my-project-key.pem
-chmod 400 my-project-key.pem
-```
+# Add to PATH
+echo 'export PATH="/c/terraform:$PATH"' >> ~/.bashrc
 
-### 3. Configure Your Key
+# Reload your environment
+source ~/.bashrc
+For Mac (Terminal):
+bash
+# Install Homebrew first
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-Edit `key.tf` and update the key name to match what you created:
+# Install Terraform
+brew install terraform
+Step 4: Verify Terraform Installation
+Open Git Bash (Windows) or Terminal (Mac)
 
-```hcl
-data "aws_key_pair" "example" {
-  key_name = "my-project-key"  # Change to your actual key pair name
+Run this command:
+
+bash
+terraform version
+✅ SUCCESS LOOKS LIKE:
+
+text
+Terraform v1.5.7
+on windows_amd64
+If you see a version number, Terraform is installed correctly!
+
+Phase 2: AWS Account Setup
+Step 5: Create AWS Account (If You Don't Have One)
+Go to aws.amazon.com
+
+Click "Create an AWS Account"
+
+Follow the sign-up process (you'll need a credit card)
+
+IMPORTANT: Save your root user email and password securely
+
+Step 6: Create IAM User (Security Best Practice)
+Login to AWS Console
+
+Search for "IAM" in the search bar
+
+Click "Users" in left sidebar
+
+Click "Add users" button
+
+Enter username: terraform-user
+
+Check "Access key - Programmatic access"
+
+Click "Next: Permissions"
+
+Step 7: Set Permissions
+Click "Attach existing policies directly"
+
+Search for "AdministratorAccess"
+
+Check the box next to "AdministratorAccess"
+
+Click "Next: Tags" → "Next: Review"
+
+Click "Create user"
+
+Step 8: Save Your AWS Access Key ID and Secret Access Key ⚠️ CRITICAL STEP ⚠️
+ON THIS SCREEN ONLY: You will see your AWS Access Key ID and AWS Secret Access Key
+
+DOWNLOAD THE CSV FILE - This is your only chance to get these keys!
+
+OPEN THE CSV FILE - You should see two critical values:
+
+Access key ID: A 20-character code starting with AKIA
+
+Secret access key: A 40-character code
+
+Save the CSV file as aws-credentials.csv on your Desktop
+
+DO NOT SHARE THIS FILE WITH ANYONE - These keys provide full access to your AWS account
+
+Close the AWS window
+
+Phase 3: Configure AWS CLI
+Step 9: Install AWS CLI
+Windows (Git Bash):
+bash
+# Download AWS CLI
+curl "https://awscli.amazonaws.com/awscli-exe-windows-x86_64.zip" -o "awscliv2.zip"
+
+# Extract it
+unzip awscliv2.zip
+
+# Install
+./aws/install.exe
+Mac (Terminal):
+bash
+# Download and install AWS CLI
+curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+sudo installer -pkg AWSCLIV2.pkg -target /
+Step 10: Configure AWS Credentials with Your Access Key ID and Secret Access Key
+Open Git Bash or Terminal
+
+Run this command:
+
+bash
+aws configure
+When prompted, enter these details FROM YOUR CSV FILE:
+
+First Prompt:
+
+text
+AWS Access Key ID [None]: 
+Open your aws-credentials.csv file
+
+Copy the Access key ID value (20 characters, starts with AKIA)
+
+Paste it here and press Enter
+
+Second Prompt:
+
+text
+AWS Secret Access Key [None]: 
+Copy the Secret access key value from your CSV file (40 characters)
+
+Paste it here and press Enter
+
+Third Prompt:
+
+text
+Default region name [None]: us-east-1
+Type us-east-1 and press Enter
+
+Fourth Prompt:
+
+text
+Default output format [None]: json
+Type json and press Enter
+
+Step 11: Verify AWS Configuration
+Run this command to confirm your AWS Access Key ID and Secret Access Key are working:
+
+bash
+aws sts get-caller-identity
+✅ SUCCESS LOOKS LIKE:
+
+json
+{
+    "UserId": "AIDASAMPLEUSERID",
+    "Account": "123456789012",
+    "Arn": "arn:aws:iam::123456789012:user/terraform-user"
 }
-```
+If you see this, your AWS credentials are correctly configured!
 
-### 4. Deploy the Infrastructure
+Phase 4: Download and Run the Terraform Project
+Step 12: Download the Project Files
+Download the project ZIP file or clone the repository containing the Terraform code
 
-```bash
+Extract the files to a folder on your Desktop called terraform-project
+
+The folder should contain these files:
+
+main.tf - Main Terraform configuration
+
+providers.tf - Provider configurations
+
+.gitignore - Git ignore rules
+
+Step 13: Open the Project in VS Code
+Open VS Code
+
+Click "File" → "Open Folder"
+
+Select the terraform-project folder on your Desktop
+
+DO NOT MODIFY any of the Terraform files unless instructed
+
+Step 14: Navigate to Project Directory
+Open Git Bash or Terminal
+
+Run these commands:
+
+bash
+# Navigate to the project folder
+cd ~/Desktop/terraform-project
+
+# Verify you're in the right location
+ls -la
+You should see the Terraform files listed.
+
+Phase 5: Deploy with Terraform
+Step 15: Initialize Terraform
+Make sure you're in your project folder:
+
+bash
+cd ~/Desktop/terraform-project
+Run initialization (this uses your AWS credentials automatically):
+
+bash
 terraform init
+✅ SUCCESS LOOKS LIKE:
+
+text
+Terraform has been successfully initialized!
+This command downloads all required providers and modules using your AWS Access Key ID and Secret Access Key.
+
+Step 16: Plan the Deployment
+bash
 terraform plan
-terraform apply -auto-approve
-```
+This shows what Terraform will create using your AWS credentials. Review the output to understand what resources will be deployed.
 
-## Verification
+Step 17: Apply the Configuration
+bash
+terraform apply
+Type yes when prompted to confirm
 
-After deployment completes (5-10 minutes), verify all instances are running:
+Wait for completion (this may take several minutes)
 
-```bash
-aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" --query 'Reservations[].Instances[].[InstanceId,State.Name,PrivateIpAddress,PublicIpAddress,Tags[?Key==`Name`].Value[0]]' --output table
-```
+Terraform is now using your AWS Access Key ID and Secret Access Key to create real AWS resources
 
-You should see 4 running instances:
-- `bastion-host` (with Public IP)
-- `app-server-1` (private IP only)
-- `app-server-2` (private IP only) 
-- `app-server-3` (private IP only)
+✅ SUCCESS LOOKS LIKE:
 
-## Testing Connectivity (Optional)
+text
+Apply complete! Resources: X added, 0 changed, 0 destroyed.
+Phase 6: Cleanup (Avoid AWS Charges)
+Step 18: Destroy Resources
+bash
+terraform destroy
+Type yes when prompted. This uses your AWS credentials to delete all created resources so you don't get charged.
 
-```bash
-# Get bastion public IP
-BASTION_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=bastion-host" "Name=instance-state-name,Values=running" --query 'Reservations[].Instances[].PublicIpAddress' --output text)
+AWS Credential Security
+🔐 Your AWS Access Key ID and Secret Access Key:
+Never share these keys with anyone
 
-# SSH to bastion
-ssh -i my-project-key.pem ubuntu@$BASTION_IP
-```
+Never commit them to version control (Git)
 
-## Customization
+Never hardcode them in your Terraform files
 
-### Change AWS Region
-Edit `0-Auth.tf`:
-```hcl
-provider "aws" {
-  region = "us-east-1"  # Change to your preferred region
-}
-```
+Store the CSV file in a secure location
 
-## Clean Up
+If compromised: Immediately delete the IAM user and create new keys
 
-To avoid ongoing charges, destroy all resources when finished:
+Proper Credential Flow:
+text
+AWS Console → IAM User → Access Key ID + Secret Access Key → aws configure → Terraform → AWS
+File Guidelines
+✅ FILES PROVIDED (DO NOT MODIFY):
+main.tf - Main Terraform configuration
 
-```bash
-terraform destroy -auto-approve
-```
+providers.tf - Provider configurations
 
-## Project Structure
+.gitignore - Git ignore rules
 
-```
-.
-├── 0-Auth.tf                 # AWS provider configuration
-├── 1-VPC.tf                  # VPC creation
-├── 2-Subnets.tf              # Public and private subnets
-├── 3-IGW.tf                  # Internet Gateway
-├── 4-NAT.tf                  # NAT Gateway
-├── 5-Route.tf                # Route tables
-├── 6-SG01-All.tf             # Security groups
-├── 11-Key.tf                 # Key pair reference (only file to modify)
-├── 14-bastion.tf             # Bastion host configuration
-├── 15-servers.tf             # Web servers with unique content
-└── 16-data-sources.tf        # AMI data sources
-```
+❌ FILES YOU SHOULD NEVER MODIFY:
+.terraform/ directory - Auto-generated, never modify
 
-## Notes
+*.tfstate files - Auto-generated state files
 
-- Only one modification required: update the key name in `key.tf`
-- Web servers automatically install nginx with unique Star Wars planet content
-- Private servers are only accessible via the bastion host for security
-- Deployment typically takes 5-10 minutes
-- Remember to run `terraform destroy` when finished to avoid unnecessary charges
+*.tfstate.backup files - State backups
 
-## Security
+Troubleshooting Common Issues
+"terraform: command not found"
+Restart Git Bash/Terminal
 
-- Bastion host acts as the only entry point to private instances
-- Private subnets have no direct internet access
-- Security groups restrict access to necessary ports only
+Check Terraform installation path
+
+"Unable to locate credentials" or "InvalidClientTokenId"
+Run aws configure again
+
+Verify your AWS Access Key ID and Secret Access Key from the CSV file
+
+Make sure you're using the IAM user keys, not root user keys
+
+"Error: No valid credential sources"
+Check AWS Access Key ID and Secret Access Key are correct
+
+Ensure IAM user has AdministratorAccess
+
+Run aws sts get-caller-identity to test credentials
+
+"Error: Failed to query available provider packages"
+Check internet connection
+
+Run terraform init again
+
+Important Notes
+Always run terraform destroy when you're done to avoid AWS charges
+
+Never commit .tfstate files to version control (they may contain sensitive data)
+
+Keep your AWS credentials secure - never share the Access Key ID and Secret Access Key
+
+The provided Terraform code is tested and working - no modifications needed
+
+Your AWS credentials are stored securely by AWS CLI and used automatically by Terraform
+
+🎉 Congratulations!
+You've successfully deployed infrastructure using Terraform! You now have:
+
+Terraform installed and configured
+
+AWS CLI set up with secure Access Key ID and Secret Access Key
+
+Deployed real infrastructure using working Terraform code
+
+Learned the complete Terraform workflow
+
+Remember to always run terraform destroy when you're done testing!
