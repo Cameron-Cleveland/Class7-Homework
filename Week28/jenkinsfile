@@ -1,0 +1,18 @@
+pipeline {
+    agent any
+    stages {
+        stage('Terraform Setup') {
+            steps {
+                // This 'aws-keys' MUST match the ID you gave in Jenkins
+                withAWS(credentials: 'aws-creds', region: 'us-east-1') {
+                    sh 'terraform init'
+                    sh 'terraform fmt'
+                    sh 'terraform validate'
+                    sh 'terraform plan'
+                    // Final Requirement: Destroy
+                    sh 'terraform destroy -auto-approve'
+                }
+            }
+        }
+    }
+}
