@@ -1,16 +1,21 @@
 pipeline {
     agent any
     stages {
-        stage('Terraform Setup') {
+        stage('Checkout') {
             steps {
-                // This 'aws-keys' MUST match the ID you gave in Jenkins
-                withAWS(credentials: 'aws-creds', region: 'us-east-1') {
-                    sh 'terraform init'
-                    sh 'terraform fmt'
-                    sh 'terraform validate'
-                    sh 'terraform plan'
-                    // Final Requirement: Destroy
-                    sh 'terraform destroy -auto-approve'
+                checkout scm
+            }
+        }
+        stage('Terraform Operations') {
+            steps {
+                // Using 'jenkins-creds' to match your Global Credentials list
+                withAWS(credentials: 'jenkins-creds', region: 'us-east-1') {
+                    dir('Week28') {
+                        sh 'terraform init'
+                        sh 'terraform fmt'
+                        sh 'terraform validate'
+                        sh 'terraform destroy --auto-approve'
+                    }
                 }
             }
         }
